@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:oralytics/home_screen.dart';
-import 'package:oralytics/login_tile.dart';
-import 'package:oralytics/auth_service.dart';
+import 'package:oralytics/screens/home_screen.dart';
+import 'package:oralytics/widgets/login_tile.dart';
+import 'package:oralytics/services/auth_service.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
@@ -17,6 +17,35 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+
+  void _showSnackBar({
+    required String message,
+    bool isError = false,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    if (!mounted) return;
+
+    final snackBar = SnackBar(
+      content: Text(
+        message,
+        style: const TextStyle(color: Colors.white),
+      ),
+      backgroundColor: isError ? Colors.red : const Color(0xFF3498DB),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.all(16),
+      duration: duration,
+      action: SnackBarAction(
+        label: 'Dismiss',
+        textColor: Colors.white,
+        onPressed: () {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        },
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
 
   Future<void> _handleAuth() async {
     if (!_formKey.currentState!.validate()) return;
@@ -44,7 +73,10 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog('Authentication Error', e.toString());
+        _showSnackBar(
+          message: e.toString(),
+          isError: true,
+        );
       }
     } finally {
       if (mounted) {
@@ -56,7 +88,10 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      _showErrorDialog('Error', 'Please enter your email address first');
+      _showSnackBar(
+        message: 'Please enter your email address first',
+        isError: true,
+      );
       return;
     }
 
@@ -65,14 +100,17 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       await _authService.sendPasswordResetEmail(email: email);
       if (mounted) {
-        _showSuccessDialog(
-          'Password Reset Email Sent',
-          'Please check your email for instructions to reset your password.',
+        _showSnackBar(
+          message: 'Password reset email sent. Please check your inbox.',
+          duration: const Duration(seconds: 6),
         );
       }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog('Error', e.toString());
+        _showSnackBar(
+          message: e.toString(),
+          isError: true,
+        );
       }
     } finally {
       if (mounted) {
@@ -99,45 +137,16 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showErrorDialog('Login Error', e.toString());
+        _showSnackBar(
+          message: e.toString(),
+          isError: true,
+        );
       }
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
       }
     }
-  }
-
-  void _showErrorDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSuccessDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

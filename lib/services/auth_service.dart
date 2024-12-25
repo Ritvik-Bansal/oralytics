@@ -48,11 +48,21 @@ class AuthService {
 
   Future<UserCredential> signInWithGoogle() async {
     try {
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) throw 'Google sign in aborted';
+      if (googleUser == null) {
+        throw 'Google sign in cancelled by user';
+      }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        throw 'Missing Google Auth Token';
+      }
+
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -62,7 +72,8 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
     } catch (e) {
-      throw 'Failed to sign in with Google: $e';
+      print('Google sign in error: $e');
+      throw 'Failed to sign in with Google: ${e.toString()}';
     }
   }
 

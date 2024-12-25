@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:oralytics/auth_service.dart';
-import 'package:oralytics/image_picker.dart';
-import 'package:oralytics/auth_screen.dart';
+import 'package:oralytics/services/auth_service.dart';
+import 'package:oralytics/screens/image_picker.dart';
+import 'package:oralytics/screens/auth_screen.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
