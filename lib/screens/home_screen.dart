@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:oralytics/models/user_model.dart';
 import 'package:oralytics/services/auth_service.dart';
 import 'package:oralytics/screens/image_picker.dart';
 import 'package:oralytics/screens/auth_screen.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  HomePage({Key? key}) : super(key: key);
+
+  final AuthService _authService = AuthService();
 
   Future<void> _handleLogout(BuildContext context) async {
     try {
@@ -46,47 +49,60 @@ class HomePage extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Welcome',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
-                ),
-              ),
-              const SizedBox(height: 40),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 1,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 2,
-                  children: [
-                    _buildModuleCard(
-                      'Calculus Prediction',
-                      'assets/calculus.png',
-                      const Color(0xFF3498DB),
-                      context,
+          child: FutureBuilder<UserModel?>(
+            future: _authService.getCurrentUser(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final user = snapshot.data;
+              final greeting =
+                  user != null ? 'Welcome, ${user.firstName}!' : 'Welcome!';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    greeting,
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2C3E50),
                     ),
-                    _buildModuleCard(
-                      'Gingivitis',
-                      'assets/gingivitis.tiff',
-                      const Color(0xFF2ECC71),
-                      context,
+                  ),
+                  const SizedBox(height: 40),
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: 1,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 2,
+                      children: [
+                        _buildModuleCard(
+                          'Calculus Prediction',
+                          'assets/calculus.png',
+                          const Color(0xFF3498DB),
+                          context,
+                        ),
+                        _buildModuleCard(
+                          'Gingivitis',
+                          'assets/gingivitis.tiff',
+                          const Color(0xFF2ECC71),
+                          context,
+                        ),
+                        _buildModuleCard(
+                          'Plaque',
+                          'assets/plaque.jpeg',
+                          const Color(0xFF9B59B6),
+                          context,
+                        ),
+                      ],
                     ),
-                    _buildModuleCard(
-                      'Plaque',
-                      'assets/plaque.jpeg',
-                      const Color(0xFF9B59B6),
-                      context,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

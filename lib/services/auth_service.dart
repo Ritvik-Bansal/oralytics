@@ -1,12 +1,45 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:oralytics/models/user_model.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   User? get currentUser => _auth.currentUser;
+
+  Future<void> _createUserInFirestore(UserCredential credential,
+      {String? firstName, String? lastName}) async {
+    final userDoc =
+        await _firestore.collection('users').doc(credential.user!.uid).get();
+
+    if (!userDoc.exists) {
+      String firstNameValue = firstName ?? '';
+      String lastNameValue = lastName ?? '';
+
+      if (credential.user?.displayName != null &&
+          (firstName == null || lastName == null)) {
+        final nameParts = credential.user!.displayName!.split(' ');
+        firstNameValue = nameParts.first;
+        lastNameValue = nameParts.length > 1 ? nameParts.last : '';
+      }
+
+      final user = UserModel(
+        id: credential.user!.uid,
+        email: credential.user!.email ?? '',
+        firstName: firstNameValue,
+        lastName: lastNameValue,
+      );
+
+      await _firestore
+          .collection('users')
+          .doc(credential.user!.uid)
+          .set(user.toMap());
+    }
+  }
 
   Future<UserCredential> signInWithEmailAndPassword({
     required String email,
@@ -26,21 +59,22 @@ class AuthService {
   Future<UserCredential> createUserWithEmailAndPassword({
     required String email,
     required String password,
+    required String firstName,
+    required String lastName,
   }) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return credential;
-    } on FirebaseAuthException catch (e) {
-      throw _handleFirebaseAuthError(e);
-    }
-  }
 
-  Future<void> sendPasswordResetEmail({required String email}) async {
-    try {
-      await _auth.sendPasswordResetEmail(email: email);
+      await _createUserInFirestore(
+        credential,
+        firstName: firstName,
+        lastName: lastName,
+      );
+
+      return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
     }
@@ -68,7 +102,11 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      return await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      await _createUserInFirestore(userCredential);
+
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
     } catch (e) {
@@ -91,11 +129,27 @@ class AuthService {
         accessToken: appleCredential.authorizationCode,
       );
 
-      return await _auth.signInWithCredential(oauthCredential);
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+
+      await _createUserInFirestore(
+        userCredential,
+        firstName: appleCredential.givenName,
+        lastName: appleCredential.familyName,
+      );
+
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleFirebaseAuthError(e);
     } catch (e) {
       throw 'Failed to sign in with Apple: $e';
+    }
+  }
+
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw _handleFirebaseAuthError(e);
     }
   }
 
@@ -133,5 +187,15 @@ class AuthService {
       default:
         return 'Authentication error: ${e.message}';
     }
+  }
+
+  Future<UserModel?> getCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    if (!doc.exists) return null;
+
+    return UserModel.fromMap(doc.data()!);
   }
 }

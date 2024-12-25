@@ -16,6 +16,8 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _authService = AuthService();
 
   void _showSnackBar({
@@ -62,6 +64,8 @@ class _AuthScreenState extends State<AuthScreen> {
         await _authService.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
         );
       }
 
@@ -83,6 +87,39 @@ class _AuthScreenState extends State<AuthScreen> {
         setState(() => isLoading = false);
       }
     }
+  }
+
+  Widget _buildNameFields() {
+    if (isLogin) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        _buildTextField(
+          controller: _firstNameController,
+          hintText: 'First Name',
+          prefixIcon: Icons.person_outline,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter your first name';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _lastNameController,
+          hintText: 'Last Name',
+          prefixIcon: Icons.person_outline,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter your last name';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
   }
 
   Future<void> _handleForgotPassword() async {
@@ -190,6 +227,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
+                          _buildNameFields(), // Add this line
                           _buildTextField(
                             controller: _emailController,
                             hintText: 'Email',
@@ -347,6 +385,8 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     super.dispose();
   }
 
