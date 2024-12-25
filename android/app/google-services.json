@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "518633803318",
+    "project_id": "oralytics-oralytics",
+    "storage_bucket": "oralytics-oralytics.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518633803318:android:75a92ccaa3718c8b9f5297",
+        "android_client_info": {
+          "package_name": "com.oralytics.oralytics"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWbILslOzFl4Ld6OKqNi818L0-2d1dYHg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
