@@ -12,7 +12,12 @@
           "package_name": "com.oralytics.oralytics"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "518633803318-q0gi9vt30fkm2bh5eu25bgi01ps73tg0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBWbILslOzFl4Ld6OKqNi818L0-2d1dYHg"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "518633803318-q0gi9vt30fkm2bh5eu25bgi01ps73tg0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "518633803318-9la0sms0kgrhm0f85aq6a0s3o491m1nk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.oralytics.oralytics"
+              }
+            }
+          ]
         }
       }
     }

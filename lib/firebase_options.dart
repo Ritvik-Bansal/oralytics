@@ -63,6 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '518633803318',
     projectId: 'oralytics-oralytics',
     storageBucket: 'oralytics-oralytics.firebasestorage.app',
+    iosClientId: '518633803318-9la0sms0kgrhm0f85aq6a0s3o491m1nk.apps.googleusercontent.com',
     iosBundleId: 'com.oralytics.oralytics',
   );
+
 }

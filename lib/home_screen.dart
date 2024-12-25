@@ -1,20 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:oralytics/auth_service.dart';
 import 'package:oralytics/image_picker.dart';
+import 'package:oralytics/auth_screen.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
+
+  Future<void> _handleLogout(BuildContext context) async {
+    try {
+      final authService = AuthService();
+      await authService.signOut();
+
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error logging out: ${e.toString()}')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.logout_rounded,
+              color: Color(0xFF2C3E50),
+            ),
+            onPressed: () => _handleLogout(context),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
               const Text(
                 'Welcome',
                 style: TextStyle(
@@ -59,8 +93,12 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildModuleCard(String title, String imagePath, Color overlayColor,
-      BuildContext context) {
+  Widget _buildModuleCard(
+    String title,
+    String imagePath,
+    Color overlayColor,
+    BuildContext context,
+  ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -68,9 +106,7 @@ class HomePage extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) {
-                return ImagePickerDemo();
-              },
+              builder: (context) => ImagePickerDemo(),
             ),
           );
         },
