@@ -41,6 +41,19 @@ dependencies:
   cloud_firestore: ^5.6.0
   google_sign_in: ^6.2.2
   sign_in_with_apple: ^6.1.4
+  firebase_storage: ^12.3.7
+  flutter_launcher_icons: ^0.14.2
+  flutter_native_splash: ^2.4.3
+
+flutter_launcher_icons:
+  ios: true
+  image_path: "assets/oralytics_logo.jpeg"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: "assets/rounded_logo.png"
+  branding: assets/oralytics_text.png
+  branding_mode: bottom
 
 dev_dependencies:
   flutter_test:

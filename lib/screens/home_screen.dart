@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:oralytics/models/user_model.dart';
+import 'package:oralytics/screens/calculus_predictor.dart';
 import 'package:oralytics/services/auth_service.dart';
 import 'package:oralytics/screens/image_picker.dart';
 import 'package:oralytics/screens/auth_screen.dart';
@@ -36,6 +37,27 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        title: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/oralytics_logo.jpeg',
+                height: 60,
+                width: 60,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Oralytics',
+              style: TextStyle(
+                color: Color(0xFF2C3E50),
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(
@@ -57,19 +79,40 @@ class HomePage extends StatelessWidget {
               }
 
               final user = snapshot.data;
-              final greeting =
-                  user != null ? 'Welcome, ${user.firstName}!' : 'Welcome!';
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    greeting,
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C3E50),
-                    ),
+                  Row(
+                    children: [
+                      if (user != null) ...[
+                        Text(
+                          'Welcome, ',
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2C3E50),
+                          ),
+                        ),
+                        Text(
+                          user.firstName,
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromARGB(255, 44, 111, 178),
+                          ),
+                        ),
+                      ] else ...[
+                        const Text(
+                          'Welcome!',
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2C3E50),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 40),
                   Expanded(
@@ -119,12 +162,28 @@ class HomePage extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ImagePickerDemo(),
-            ),
-          );
+          if (title == 'Calculus Prediction') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CalculusPredictor(),
+              ),
+            );
+          } else if (title == 'Gingivitis') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ImagePickerDemo(),
+              ),
+            );
+          } else if (title == 'Plaque') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ImagePickerDemo(),
+              ),
+            );
+          }
         },
         child: Container(
           clipBehavior: Clip.antiAlias,
