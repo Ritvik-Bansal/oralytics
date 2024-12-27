@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:oralytics/models/user_model.dart';
 import 'package:oralytics/screens/calculus_predictor.dart';
+import 'package:oralytics/screens/gingivitis_predictor.dart';
 import 'package:oralytics/services/auth_service.dart';
 import 'package:oralytics/screens/image_picker.dart';
 import 'package:oralytics/screens/auth_screen.dart';
@@ -173,7 +174,7 @@ class HomePage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ImagePickerDemo(),
+                builder: (context) => GingivitisPredictor(),
               ),
             );
           } else if (title == 'Plaque') {

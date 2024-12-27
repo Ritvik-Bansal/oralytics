@@ -99,10 +99,10 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
     }
   }
 
-  Future<void> pickImage() async {
+  Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
-      source: ImageSource.camera,
+      source: source,
       imageQuality: 85,
     );
 
@@ -313,60 +313,174 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text("Dental Calculus Classification"),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_image != null)
-                Container(
-                  height: 300,
-                  width: double.infinity,
-                  child: isLoading
-                      ? Center(child: CircularProgressIndicator())
-                      : Image.file(
-                          _image!,
-                          fit: BoxFit.contain,
-                        ),
-                )
-              else
-                Container(
-                  height: 300,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                  ),
-                  child: Center(
-                    child: ElevatedButton.icon(
-                      onPressed: pickImage,
-                      icon: Icon(Icons.add_a_photo),
-                      label: Text("Pick an Image"),
-                    ),
-                  ),
-                ),
-              if (!isLoading &&
-                  _result != null &&
-                  _result!['predictions'] != null &&
-                  (_result!['predictions'] as List).isNotEmpty)
-                _buildPredictionCard((_result!['predictions'] as List).first),
-              if (_result != null && _result!['error'] != null)
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    _result!['error'],
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-            ],
+      body: _image == null
+          ? _buildEmptyState()
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  if (_image != null)
+                    isLoading
+                        ? Container(
+                            height: 300,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Analyzing image...',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : Column(
+                            children: [
+                              Container(
+                                height: 300,
+                                width: double.infinity,
+                                child: Image.file(
+                                  _image!,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              if (!isLoading &&
+                                  _result != null &&
+                                  _result!['predictions'] != null &&
+                                  (_result!['predictions'] as List).isNotEmpty)
+                                _buildPredictionCard(
+                                    (_result!['predictions'] as List).first),
+                              Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: () =>
+                                          pickImage(ImageSource.camera),
+                                      icon: Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                      ),
+                                      label: Text("New Photo"),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: () =>
+                                          pickImage(ImageSource.gallery),
+                                      icon: Icon(
+                                        Icons.photo_library,
+                                        color: Colors.white,
+                                      ),
+                                      label: Text("New Image"),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.all(24),
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.add_a_photo_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
           ),
-        ),
+          SizedBox(height: 24),
+          Text(
+            "Analyze Dental Calculus",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 12),
+          Text(
+            "Take or select a clear photo of your teeth to detect signs of calculus",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () => pickImage(ImageSource.camera),
+            icon: Icon(
+              Icons.camera_alt,
+              color: Colors.white,
+            ),
+            label: Text("Take Photo"),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: () => pickImage(ImageSource.gallery),
+            icon: Icon(Icons.photo_library),
+            label: Text("Choose from Gallery"),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            ),
+          ),
+        ],
       ),
     );
   }

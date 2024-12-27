@@ -267,7 +267,6 @@ class _AuthScreenState extends State<AuthScreen> {
                                 child: Text(
                                   'Forgot Password?',
                                   style: TextStyle(
-                                    color: const Color(0xFF3498DB),
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -309,13 +308,13 @@ class _AuthScreenState extends State<AuthScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF3498DB),
-            Color(0xFF2980B9),
+            Color.fromARGB(255, 44, 111, 178),
+            Color.fromARGB(255, 44, 111, 178),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3498DB).withOpacity(0.3),
+            color: Color.fromARGB(255, 44, 111, 178).withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -443,8 +442,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF3498DB),
-                    Color(0xFF2980B9),
+                    Color.fromARGB(255, 44, 111, 178),
+                    Color.fromARGB(255, 44, 111, 178),
                   ],
                 )
               : null,
