@@ -3,8 +3,14 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
 
 class GingivitisPredictor extends StatefulWidget {
+  const GingivitisPredictor({super.key});
+
   @override
   _GingivitisPredictorState createState() => _GingivitisPredictorState();
 }
@@ -15,10 +21,140 @@ class _GingivitisPredictorState extends State<GingivitisPredictor> {
   double imageWidth = 1;
   double imageHeight = 1;
   bool isLoading = false;
+  final _firestore = FirebaseFirestore.instance;
+  final _storage = FirebaseStorage.instance;
+  final _auth = FirebaseAuth.instance;
+
+  Future<String?> _uploadImageToStorage(File imageFile) async {
+    if (_auth.currentUser == null) {
+      print('No user is currently logged in');
+      return null;
+    }
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName =
+          'gingivitis_detection_$timestamp${path.extension(imageFile.path)}';
+
+      final storageRef = _storage
+          .ref()
+          .child('users')
+          .child(_auth.currentUser!.uid)
+          .child('gingivitis_detection_images')
+          .child(fileName);
+
+      await storageRef.putFile(imageFile);
+
+      final downloadUrl = await storageRef.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  Future<void> _saveResultToFirebase() async {
+    if (_result == null || _auth.currentUser == null || _image == null) return;
+
+    try {
+      final imageUrl = await _uploadImageToStorage(_image!);
+
+      if (imageUrl == null) {
+        throw Exception('Failed to upload image');
+      }
+
+      Map<String, int> severityCounts = {};
+      for (var prediction in _result!['predictions']) {
+        String classNum = prediction['class'].toString();
+        severityCounts[classNum] = (severityCounts[classNum] ?? 0) + 1;
+      }
+
+      final predictionData = {
+        'timestamp': FieldValue.serverTimestamp(),
+        'imageUrl': imageUrl,
+        'imageMetadata': {
+          'width': imageWidth,
+          'height': imageHeight,
+        },
+        'predictions': _result!['predictions'],
+        'severityCounts': severityCounts,
+        'hasGingivitis': severityCounts.keys.any((k) => int.parse(k) >= 3),
+        'maxSeverity': severityCounts.keys.isEmpty
+            ? null
+            : severityCounts.keys
+                .map((k) => int.parse(k))
+                .reduce((a, b) => a > b ? a : b),
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('gingivitis_detection')
+          .add(predictionData);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Results and image saved successfully'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving results: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  Future<void> _askToSaveResults() {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    return ScaffoldMessenger.of(context)
+        .showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                      'Would you like to save this result for personalized insights?'),
+                ),
+                SnackBarAction(
+                  label: 'Yes',
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    await _saveResultToFirebase();
+                  },
+                ),
+                SnackBarAction(
+                  label: 'No',
+                  textColor: Colors.white70,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  },
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+            duration: Duration(days: 1),
+          ),
+        )
+        .closed;
+  }
 
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
+    final pickedFile = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
 
     if (pickedFile != null) {
       setState(() {
@@ -37,6 +173,10 @@ class _GingivitisPredictorState extends State<GingivitisPredictor> {
       setState(() {
         isLoading = false;
       });
+
+      if (_result != null && !_result!.containsKey('error')) {
+        await _askToSaveResults();
+      }
     }
   }
 
@@ -91,7 +231,7 @@ class _GingivitisPredictorState extends State<GingivitisPredictor> {
                   children: [
                     if (_image != null)
                       isLoading
-                          ? Container(
+                          ? SizedBox(
                               height: 300, // Match the image container height
                               child: Center(
                                 child: Column(
@@ -284,21 +424,21 @@ class PolygonPainter extends CustomPainter {
   Color getClassColor(String classNum) {
     switch (classNum) {
       case "0": // Upper Teeth
-        return Colors.blue.withOpacity(0.3);
+        return Colors.blue.withValues(alpha: 0.3);
       case "1": // Lower Teeth
-        return Colors.green.withOpacity(0.3);
-      case "2": // Very Mild
-        return Colors.yellow.withOpacity(0.3);
+        return Colors.green.withValues(alpha: 0.3);
+      case "2": // None
+        return Colors.yellow.withValues(alpha: 0.3);
       case "3": // Mild
-        return Colors.orange.withOpacity(0.3);
+        return Colors.orange.withValues(alpha: 0.3);
       case "4": // Moderate
-        return Colors.deepOrange.withOpacity(0.3);
+        return Colors.deepOrangeAccent.withValues(alpha: 0.3);
       case "5": // Severe
-        return Colors.red.withOpacity(0.3);
+        return Colors.red.withValues(alpha: 0.3);
       case "6": // Very Severe
-        return Colors.purple.withOpacity(0.3);
+        return Colors.purple.withValues(alpha: 0.3);
       default:
-        return Colors.grey.withOpacity(0.3);
+        return Colors.grey.withValues(alpha: 0.3);
     }
   }
 
@@ -324,8 +464,8 @@ class PolygonPainter extends CustomPainter {
 
         // Draw border with more opacity
         paint.style = PaintingStyle.stroke;
-        paint.color =
-            getClassColor(prediction['class'].toString()).withOpacity(0.8);
+        paint.color = getClassColor(prediction['class'].toString())
+            .withValues(alpha: 0.8);
         canvas.drawPath(path, paint);
       }
     }
@@ -338,26 +478,26 @@ class PolygonPainter extends CustomPainter {
 class ResultsLegend extends StatelessWidget {
   final List<dynamic> predictions;
 
-  ResultsLegend({required this.predictions});
+  ResultsLegend({super.key, required this.predictions});
 
   Color getClassColor(String classNum) {
     switch (classNum) {
-      case "0":
-        return Colors.blue.withOpacity(0.3);
-      case "1":
-        return Colors.green.withOpacity(0.3);
-      case "2":
-        return Colors.yellow.withOpacity(0.3);
-      case "3":
-        return Colors.orange.withOpacity(0.3);
-      case "4":
-        return Colors.deepOrange.withOpacity(0.3);
-      case "5":
-        return Colors.red.withOpacity(0.3);
-      case "6":
-        return Colors.purple.withOpacity(0.3);
+      case "0": // Upper Teeth
+        return Colors.blue.withValues(alpha: 0.3);
+      case "1": // Lower Teeth
+        return Colors.green.withValues(alpha: 0.3);
+      case "2": // None
+        return Colors.yellow.withValues(alpha: 0.3);
+      case "3": // Mild
+        return Colors.orange.withValues(alpha: 0.3);
+      case "4": // Moderate
+        return Colors.deepOrangeAccent.withValues(alpha: 0.3);
+      case "5": // Severe
+        return Colors.red.withValues(alpha: 0.3);
+      case "6": // Very Severe
+        return Colors.purple.withValues(alpha: 0.3);
       default:
-        return Colors.grey.withOpacity(0.3);
+        return Colors.grey.withValues(alpha: 0.3);
     }
   }
 
@@ -428,7 +568,7 @@ class ResultsLegend extends StatelessWidget {
             decoration: BoxDecoration(
               color: getClassColor(classNum),
               border: Border.all(
-                color: getClassColor(classNum).withOpacity(0.8),
+                color: getClassColor(classNum).withValues(alpha: 0.8),
               ),
             ),
           ),
@@ -454,14 +594,14 @@ class ResultsLegend extends StatelessWidget {
             decoration: BoxDecoration(
               color: getClassColor(classNum),
               border: Border.all(
-                color: getClassColor(classNum).withOpacity(0.8),
+                color: getClassColor(classNum).withValues(alpha: 0.8),
               ),
             ),
           ),
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              '$severityLabel (${count} ${count == 1 ? 'tooth' : 'teeth'})',
+              '$severityLabel ($count ${count == 1 ? 'tooth' : 'teeth'})',
               style: TextStyle(fontSize: 16),
             ),
           ),
@@ -498,7 +638,7 @@ class ResultsLegend extends StatelessWidget {
   String getSeverityLabel(String classNum) {
     switch (classNum) {
       case "2":
-        return "Very Mild Gingivitis";
+        return "No Gingivitis";
       case "3":
         return "Mild Gingivitis";
       case "4":

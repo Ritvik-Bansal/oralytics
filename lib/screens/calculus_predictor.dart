@@ -9,6 +9,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 
 class CalculusPredictor extends StatefulWidget {
+  const CalculusPredictor({super.key});
+
   @override
   _CalculusPredictorState createState() => _CalculusPredictorState();
 }
@@ -99,6 +101,44 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
     }
   }
 
+  Future<void> _askToSaveResults() {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    return ScaffoldMessenger.of(context)
+        .showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                      'Would you like to save this result for personalized insights?'),
+                ),
+                SnackBarAction(
+                  label: 'Yes',
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    await _saveResultToFirebase();
+                  },
+                ),
+                SnackBarAction(
+                  label: 'No',
+                  textColor: Colors.white70,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  },
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(16),
+            duration: Duration(days: 1),
+          ),
+        )
+        .closed;
+  }
+
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
@@ -114,13 +154,13 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
 
       await _sendImageToApi(_image!);
 
-      if (_result != null && !_result!.containsKey('error')) {
-        await _saveResultToFirebase();
-      }
-
       setState(() {
         isLoading = false;
       });
+
+      if (_result != null && !_result!.containsKey('error')) {
+        await _askToSaveResults();
+      }
     }
   }
 
@@ -162,7 +202,7 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
         ? Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.2),
+              color: Colors.red.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -187,7 +227,7 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
         : Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.green.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -327,7 +367,7 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
                 children: [
                   if (_image != null)
                     isLoading
-                        ? Container(
+                        ? SizedBox(
                             height: 300,
                             child: Center(
                               child: Column(
@@ -348,7 +388,7 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
                           )
                         : Column(
                             children: [
-                              Container(
+                              SizedBox(
                                 height: 300,
                                 width: double.infinity,
                                 child: Image.file(
