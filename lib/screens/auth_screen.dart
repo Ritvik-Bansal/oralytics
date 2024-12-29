@@ -173,7 +173,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => MainNavigationScreen()),
         );
       }
     } catch (e) {

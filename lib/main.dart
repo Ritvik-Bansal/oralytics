@@ -92,7 +92,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = [
     HomePage(),
-    const AnalyticsScreen(),
+    const DentalAnalyticsScreen(),
     const SettingsScreen(),
   ];
 

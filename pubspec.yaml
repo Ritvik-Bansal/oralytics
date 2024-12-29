@@ -45,6 +45,8 @@ dependencies:
   flutter_launcher_icons: ^0.14.2
   flutter_native_splash: ^2.4.3
   path: ^1.9.0
+  fl_chart: ^0.69.2
+  intl: ^0.20.1
 
 flutter_launcher_icons:
   ios: true
