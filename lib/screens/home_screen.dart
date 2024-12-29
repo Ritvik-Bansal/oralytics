@@ -4,32 +4,11 @@ import 'package:oralytics/screens/calculus_predictor.dart';
 import 'package:oralytics/screens/gingivitis_predictor.dart';
 import 'package:oralytics/services/auth_service.dart';
 import 'package:oralytics/screens/image_picker.dart';
-import 'package:oralytics/screens/auth_screen.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({Key? key}) : super(key: key);
 
   final AuthService _authService = AuthService();
-
-  Future<void> _handleLogout(BuildContext context) async {
-    try {
-      final authService = AuthService();
-      await authService.signOut();
-
-      if (context.mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const AuthScreen()),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error logging out: ${e.toString()}')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,15 +38,6 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.logout_rounded,
-              color: Color(0xFF2C3E50),
-            ),
-            onPressed: () => _handleLogout(context),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Padding(

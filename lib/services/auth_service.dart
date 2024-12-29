@@ -198,4 +198,53 @@ class AuthService {
 
     return UserModel.fromMap(doc.data()!);
   }
+
+  Future<void> updateUserProfile({
+    required String firstName,
+    required String lastName,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'No user logged in';
+
+      await _firestore.collection('users').doc(user.uid).update({
+        'firstName': firstName,
+        'lastName': lastName,
+      });
+    } on FirebaseException catch (e) {
+      throw 'Failed to update profile: ${e.message}';
+    } catch (e) {
+      throw 'Failed to update profile: $e';
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'No user logged in';
+
+      final userRef = _firestore.collection('users').doc(user.uid);
+
+      final batch = _firestore.batch();
+
+      batch.delete(userRef);
+
+      await batch.commit();
+
+      await user.delete();
+
+      await signOut();
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'requires-recent-login':
+          throw 'Please sign in again before deleting your account';
+        default:
+          throw _handleFirebaseAuthError(e);
+      }
+    } on FirebaseException catch (e) {
+      throw 'Failed to delete account: ${e.message}';
+    } catch (e) {
+      throw 'Failed to delete account: $e';
+    }
+  }
 }

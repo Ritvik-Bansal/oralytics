@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:oralytics/main.dart';
 import 'package:oralytics/screens/home_screen.dart';
 import 'package:oralytics/widgets/login_tile.dart';
 import 'package:oralytics/services/auth_service.dart';
@@ -55,24 +57,26 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => isLoading = true);
 
     try {
+      UserCredential credential;
       if (isLogin) {
-        await _authService.signInWithEmailAndPassword(
+        credential = await _authService.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
       } else {
-        await _authService.createUserWithEmailAndPassword(
+        credential = await _authService.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
         );
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => MainNavigationScreen()),
         );
       }
     } catch (e) {
