@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:oralytics/main.dart';
-import 'package:oralytics/screens/home_screen.dart';
 import 'package:oralytics/widgets/login_tile.dart';
 import 'package:oralytics/services/auth_service.dart';
 
@@ -193,7 +192,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           SafeArea(
@@ -231,7 +230,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          _buildNameFields(), // Add this line
+                          _buildNameFields(),
                           _buildTextField(
                             controller: _emailController,
                             hintText: 'Email',

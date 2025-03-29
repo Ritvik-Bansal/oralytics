@@ -29,18 +29,17 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
       return null;
     }
     try {
-      print(
-          'Current user ID: ${_auth.currentUser?.uid}'); // Add this debug line
+      print('Current user ID: ${_auth.currentUser?.uid}');
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName =
-          'plaque_detection_$timestamp${path.extension(imageFile.path)}';
+          'calculus_detection_$timestamp${path.extension(imageFile.path)}';
 
       final storageRef = _storage
           .ref()
           .child('users')
           .child(_auth.currentUser!.uid)
-          .child('plaque_detection_images')
+          .child('calculus_detection_images')
           .child(fileName);
 
       await storageRef.putFile(imageFile);
@@ -78,7 +77,7 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
       await _firestore
           .collection('users')
           .doc(_auth.currentUser!.uid)
-          .collection('plaque_detection')
+          .collection('calculus_detection')
           .add(predictionData);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -350,6 +349,37 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
     );
   }
 
+  Widget _buildMedicalDisclaimer() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Medical Disclaimer',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'This app is for informational purposes only and should not be used as a substitute for professional medical advice. Please consult your dentist or healthcare provider before making any medical decisions based on the results from this app.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[800],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -449,6 +479,7 @@ class _CalculusPredictorState extends State<CalculusPredictor> {
                                   ],
                                 ),
                               ),
+                              _buildMedicalDisclaimer(),
                             ],
                           ),
                 ],

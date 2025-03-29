@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 class DentalAnalyticsScreen extends StatefulWidget {
@@ -19,7 +18,6 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return {};
 
-    // Fetch gingivitis data
     final gingivitisSnapshot = await _firestore
         .collection('users')
         .doc(userId)
@@ -28,8 +26,15 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
         .limit(10)
         .get();
 
-    // Fetch calculus data
     final calculusSnapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('calculus_detection')
+        .orderBy('timestamp', descending: true)
+        .limit(10)
+        .get();
+
+    final plaqueSnapshot = await _firestore
         .collection('users')
         .doc(userId)
         .collection('plaque_detection')
@@ -52,6 +57,13 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
                 'timestamp': (doc.data()['timestamp'] as Timestamp).toDate(),
               })
           .toList(),
+      'plaque': plaqueSnapshot.docs
+          .map((doc) => {
+                ...doc.data(),
+                'id': doc.id,
+                'timestamp': (doc.data()['timestamp'] as Timestamp).toDate(),
+              })
+          .toList(),
     };
   }
 
@@ -65,6 +77,8 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
     final maxSeverity = latestScan['maxSeverity'];
 
     return Card(
+      color: Colors.white,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -123,6 +137,102 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
     );
   }
 
+  Widget _buildPlaqueOverview(List<Map<String, dynamic>> data) {
+    if (data.isEmpty) {
+      return _buildEmptyState('No plaque detection history available');
+    }
+
+    final latestScan = data.first;
+    final resultImageUrl = latestScan['resultImageUrl'];
+
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Plaque Status',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: resultImageUrl != null
+                        ? DecorationImage(
+                            image: NetworkImage(resultImageUrl),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: resultImageUrl == null
+                      ? Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey[400],
+                          size: 32,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Last Scan',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Date: ${DateFormat('MMM d, y').format(latestScan['timestamp'])}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              color: Color(0xFFE75480),
+                              margin: EdgeInsets.only(right: 4),
+                            ),
+                            Text('Plaque'),
+                            SizedBox(width: 16),
+                            Container(
+                              width: 16,
+                              height: 16,
+                              color: Color(0xFF74EE15),
+                              margin: EdgeInsets.only(right: 4),
+                            ),
+                            Text('Calculus'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCalculusOverview(List<Map<String, dynamic>> data) {
     if (data.isEmpty) {
       return _buildEmptyState('No calculus detection history available');
@@ -134,6 +244,8 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
         prediction.toLowerCase().contains('light');
 
     return Card(
+      color: Colors.white,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -191,10 +303,13 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
     );
   }
 
-// Replace the _buildTrendsGraph method with this new analytical summary widget
-  Widget _buildStatusSummary(List<Map<String, dynamic>> gingivitisData,
-      List<Map<String, dynamic>> calculusData) {
+  Widget _buildStatusSummary(
+      List<Map<String, dynamic>> gingivitisData,
+      List<Map<String, dynamic>> calculusData,
+      List<Map<String, dynamic>> plaqueData) {
     return Card(
+      color: Colors.white,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -205,22 +320,19 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            // Overall Health Status
-            _buildOverallStatus(gingivitisData, calculusData),
+            _buildOverallStatus(gingivitisData, calculusData, plaqueData),
             const Divider(height: 32),
-            // Last Check Stats
-            _buildLastCheckStats(gingivitisData, calculusData),
-            const Divider(height: 32),
-            // Improvement Tracking
-            _buildImprovementTracking(gingivitisData, calculusData),
+            _buildImprovementTracking(gingivitisData, calculusData, plaqueData),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildOverallStatus(List<Map<String, dynamic>> gingivitisData,
-      List<Map<String, dynamic>> calculusData) {
+  Widget _buildOverallStatus(
+      List<Map<String, dynamic>> gingivitisData,
+      List<Map<String, dynamic>> calculusData,
+      List<Map<String, dynamic>> plaqueData) {
     final hasGingivitis =
         gingivitisData.isNotEmpty && gingivitisData.first['hasGingivitis'];
     final hasCalculus = calculusData.isNotEmpty &&
@@ -228,10 +340,12 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
             .toString()
             .toLowerCase()
             .contains('calculus');
+    final hasPlaque =
+        plaqueData.isNotEmpty && plaqueData.first['resultImageUrl'] != null;
 
-    final overallStatus = !hasGingivitis && !hasCalculus
+    final overallStatus = !hasGingivitis && !hasCalculus && !hasPlaque
         ? 'Healthy'
-        : (hasGingivitis && hasCalculus)
+        : (hasGingivitis && hasCalculus || hasPlaque)
             ? 'Needs Attention'
             : 'Monitor';
 
@@ -289,40 +403,16 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
     );
   }
 
-  Widget _buildLastCheckStats(List<Map<String, dynamic>> gingivitisData,
-      List<Map<String, dynamic>> calculusData) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Last Check Statistics',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 12),
-        if (gingivitisData.isNotEmpty)
-          _buildStatItem(
-            'Gingivitis Severity',
-            gingivitisData.first['hasGingivitis']
-                ? _getSeverityText(gingivitisData.first['maxSeverity'])
-                : 'None',
-            Icons.medical_information,
-          ),
-        if (calculusData.isNotEmpty)
-          _buildStatItem(
-            'Calculus Status',
-            calculusData.first['topPrediction'].toString(),
-            Icons.analytics,
-          ),
-      ],
-    );
-  }
+  Widget _buildImprovementTracking(
+      List<Map<String, dynamic>> gingivitisData,
+      List<Map<String, dynamic>> calculusData,
+      List<Map<String, dynamic>> plaqueData) {
+    bool hasGingivitisData = gingivitisData.length >= 2;
+    bool hasCalculusData = calculusData.length >= 2;
 
-  Widget _buildImprovementTracking(List<Map<String, dynamic>> gingivitisData,
-      List<Map<String, dynamic>> calculusData) {
-    // Calculate improvements
-    String gingivitisProgress =
-        _calculateProgress(gingivitisData, 'gingivitis');
-    String calculusProgress = _calculateProgress(calculusData, 'calculus');
+    if (!hasGingivitisData && !hasCalculusData) {
+      return Container();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,36 +422,121 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
-        _buildProgressItem('Gingivitis', gingivitisProgress),
-        const SizedBox(height: 8),
-        _buildProgressItem('Calculus', calculusProgress),
+        if (hasGingivitisData) ...[
+          _buildProgressItem(
+              'Gingivitis', _calculateProgress(gingivitisData, 'gingivitis')),
+          const SizedBox(height: 8),
+        ],
+        if (hasCalculusData) ...[
+          _buildProgressItem(
+              'Calculus', _calculateProgress(calculusData, 'calculus')),
+          const SizedBox(height: 8),
+        ],
+        // if (hasPlaqueData) ...[
+        //   _buildProgressItem(
+        //       'Plaque', _calculateProgress(plaqueData, 'plaque')),
+        // ],
       ],
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.blue),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.bodyMedium),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildRecommendations(Map<String, List<Map<String, dynamic>>> data) {
+    final gingivitisData = data['gingivitis'] ?? [];
+    final calculusData = data['calculus'] ?? [];
+    final plaqueData = data['plaque'] ?? [];
+
+    if (gingivitisData.isEmpty && calculusData.isEmpty && plaqueData.isEmpty) {
+      return Card(
+        color: Colors.white,
+        elevation: 0,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Recommendations',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              _buildRecommendationItem(
+                'Start tracking your dental health',
+                'Take regular scans to receive personalized recommendations.',
+                Icons.track_changes,
+              ),
+            ],
           ),
-        ],
+        ),
+      );
+    }
+
+    final hasGingivitis = gingivitisData.isNotEmpty &&
+        (gingivitisData.first['hasGingivitis'] ?? false);
+    final calculusPrediction = calculusData.isNotEmpty
+        ? calculusData.first['topPrediction']?.toString().toLowerCase() ?? ''
+        : '';
+    final hasCalculus = calculusPrediction.contains('heavy') ||
+        calculusPrediction.contains('light');
+    final hasPlaque =
+        plaqueData.isNotEmpty && plaqueData.first['resultImageUrl'] != null;
+
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Recommendations',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            if (hasPlaque) ...[
+              _buildRecommendationItem(
+                'Improve oral hygiene',
+                'Detected plaque indicates need for better brushing and flossing routine.',
+                Icons.cleaning_services,
+              ),
+            ],
+            if (hasGingivitis) ...[
+              _buildRecommendationItem(
+                'Schedule a dental check-up',
+                'Your gums show signs of gingivitis. Professional cleaning and examination is recommended.',
+                Icons.calendar_today,
+              ),
+              _buildRecommendationItem(
+                'Improve brushing technique',
+                'Focus on gentle circular motions along the gum line.',
+                Icons.brush,
+              ),
+            ],
+            if (hasCalculus) ...[
+              _buildRecommendationItem(
+                'Professional cleaning needed',
+                'Calculus buildup requires professional removal.',
+                Icons.cleaning_services,
+              ),
+            ],
+            if (!hasGingivitis &&
+                !hasCalculus &&
+                !hasPlaque &&
+                (gingivitisData.isNotEmpty ||
+                    calculusData.isNotEmpty ||
+                    plaqueData.isNotEmpty))
+              _buildRecommendationItem(
+                'Maintain good habits',
+                'Continue your current oral hygiene routine.',
+                Icons.check_circle,
+              ),
+            _buildRecommendationItem(
+              'Regular monitoring',
+              'Take scans every 2-3 weeks to track your progress.',
+              Icons.track_changes,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -429,7 +604,7 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
         if (currentSeverity < previousSeverity) return 'Improving';
         if (currentSeverity > previousSeverity) return 'Worsening';
       }
-    } else {
+    } else if (type == 'calculus') {
       bool currentHasLightCalculus =
           data[0]['topPrediction'].toString().toLowerCase().contains('light');
       bool currentHasheavyCalculus =
@@ -445,100 +620,16 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
 
       if ((currentHasNoCalculus &&
               (previousHasLightCalculus || previousHasheavyCalculus)) ||
-          (currentHasLightCalculus && previousHasheavyCalculus))
+          (currentHasLightCalculus && previousHasheavyCalculus)) {
         return 'Improving';
-      if (currentHasheavyCalculus &&
-              (previousHasLightCalculus || previousHasNoCalculus) ||
-          (currentHasLightCalculus && previousHasNoCalculus))
+      }
+      if ((currentHasheavyCalculus &&
+              (previousHasLightCalculus || previousHasNoCalculus)) ||
+          (currentHasLightCalculus && previousHasNoCalculus)) {
         return 'Worsening';
+      }
     }
-
     return 'Stable';
-  }
-
-  Widget _buildRecommendations(Map<String, List<Map<String, dynamic>>> data) {
-    final gingivitisData = data['gingivitis'] ?? [];
-    final calculusData = data['calculus'] ?? [];
-
-    // Return early with a default message if no data is available
-    if (gingivitisData.isEmpty && calculusData.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Recommendations',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              _buildRecommendationItem(
-                'Start tracking your dental health',
-                'Take regular scans to receive personalized recommendations.',
-                Icons.track_changes,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final hasGingivitis = gingivitisData.isNotEmpty &&
-        (gingivitisData.first['hasGingivitis'] ?? false);
-    final calculusPrediction = calculusData.isNotEmpty
-        ? calculusData.first['topPrediction']?.toString().toLowerCase() ?? ''
-        : '';
-    final hasCalculus = calculusPrediction.contains('heavy') ||
-        calculusPrediction.contains('light');
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Recommendations',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            if (hasGingivitis) ...[
-              _buildRecommendationItem(
-                'Schedule a dental check-up',
-                'Your gums show signs of gingivitis. Professional cleaning and examination is recommended.',
-                Icons.calendar_today,
-              ),
-              _buildRecommendationItem(
-                'Improve brushing technique',
-                'Focus on gentle circular motions along the gum line.',
-                Icons.brush,
-              ),
-            ],
-            if (hasCalculus) ...[
-              _buildRecommendationItem(
-                'Professional cleaning needed',
-                'Calculus buildup requires professional removal.',
-                Icons.cleaning_services,
-              ),
-            ],
-            if (!hasGingivitis &&
-                !hasCalculus &&
-                (gingivitisData.isNotEmpty || calculusData.isNotEmpty))
-              _buildRecommendationItem(
-                'Maintain good habits',
-                'Continue your current oral hygiene routine.',
-                Icons.check_circle,
-              ),
-            _buildRecommendationItem(
-              'Regular monitoring',
-              'Take scans every 2-3 weeks to track your progress.',
-              Icons.track_changes,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildRecommendationItem(
@@ -577,25 +668,10 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(label),
-      ],
-    );
-  }
-
   Widget _buildEmptyState(String message) {
     return Card(
+      color: Colors.white,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -635,7 +711,18 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+    final cardDecoration = BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: primaryColor,
+        width: 1,
+      ),
+    );
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Dental Health Analytics'),
         backgroundColor: Colors.white,
@@ -658,8 +745,11 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
           final data = snapshot.data ?? {};
           final gingivitisData = data['gingivitis'] ?? [];
           final calculusData = data['calculus'] ?? [];
+          final plaqueData = data['plaque'] ?? [];
 
-          if (gingivitisData.isEmpty && calculusData.isEmpty) {
+          if (gingivitisData.isEmpty &&
+              calculusData.isEmpty &&
+              plaqueData.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -667,14 +757,12 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
                   Icon(
                     Icons.analytics_outlined,
                     size: 64,
-                    color: Colors.grey[400],
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No dental health data available',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.grey[600],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -682,7 +770,6 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
                     'Take some scans to start tracking your progress',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[500],
                     ),
                   ),
                 ],
@@ -700,20 +787,46 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (plaqueData.isNotEmpty) ...[
+                    Container(
+                      decoration: cardDecoration,
+                      child: _buildPlaqueOverview(plaqueData),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   if (gingivitisData.isNotEmpty) ...[
-                    _buildGingivitisOverview(gingivitisData),
+                    Container(
+                      decoration: cardDecoration,
+                      child: _buildGingivitisOverview(gingivitisData),
+                    ),
                     const SizedBox(height: 16),
                   ],
                   if (calculusData.isNotEmpty) ...[
-                    _buildCalculusOverview(calculusData),
+                    Container(
+                      decoration: cardDecoration,
+                      child: _buildCalculusOverview(calculusData),
+                    ),
                     const SizedBox(height: 16),
                   ],
-                  if (gingivitisData.isNotEmpty || calculusData.isNotEmpty) ...[
-                    _buildStatusSummary(gingivitisData, calculusData),
+                  if (gingivitisData.isNotEmpty ||
+                      calculusData.isNotEmpty ||
+                      plaqueData.isNotEmpty) ...[
+                    Container(
+                      decoration: cardDecoration,
+                      child: _buildStatusSummary(
+                          gingivitisData, calculusData, plaqueData),
+                    ),
                     const SizedBox(height: 16),
-                    _buildRecommendations(data),
+                    Container(
+                      decoration: cardDecoration,
+                      child: _buildRecommendations(data),
+                    ),
                     const SizedBox(height: 16),
-                    _buildScanHistory(gingivitisData, calculusData),
+                    Container(
+                      decoration: cardDecoration,
+                      child: _buildScanHistory(
+                          gingivitisData, calculusData, plaqueData),
+                    ),
                   ],
                 ],
               ),
@@ -727,58 +840,220 @@ class _DentalAnalyticsScreenState extends State<DentalAnalyticsScreen> {
   Widget _buildScanHistory(
     List<Map<String, dynamic>> gingivitisData,
     List<Map<String, dynamic>> calculusData,
+    List<Map<String, dynamic>> plaqueData,
   ) {
+    final allScans = [
+      ...gingivitisData.map((scan) => ({
+            ...scan,
+            'type': 'Gingivitis',
+            'result': scan['hasGingivitis'] ? 'Detected' : 'Healthy',
+          })),
+      ...calculusData.map((scan) => ({
+            ...scan,
+            'type': 'Calculus',
+            'result': scan['topPrediction'] ?? 'Unknown',
+          })),
+      ...plaqueData.map((scan) => ({
+            ...scan,
+            'type': 'Plaque',
+            'result': 'View Result',
+            'hasImage': scan['resultImageUrl'] != null,
+          })),
+    ];
+
+    allScans.sort((a, b) =>
+        (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));
+
     return Card(
+      color: Colors.white,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Scan History',
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Scan History',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                Text(
+                  '${allScans.length} scans',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Type')),
-                  DataColumn(label: Text('Result')),
-                  DataColumn(label: Text('Severity/Confidence')),
-                ],
-                rows: [
-                  ...gingivitisData.map((scan) => DataRow(
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    headingRowColor: MaterialStateProperty.all(
+                      Colors.grey.shade50,
+                    ),
+                    dataRowMaxHeight: 64,
+                    dataRowMinHeight: 64,
+                    columnSpacing: 32,
+                    columns: [
+                      DataColumn(
+                        label: Row(
+                          children: [
+                            Icon(Icons.calendar_today,
+                                size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            const Text('Date'),
+                          ],
+                        ),
+                      ),
+                      DataColumn(
+                        label: Row(
+                          children: [
+                            Icon(Icons.category,
+                                size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            const Text('Type'),
+                          ],
+                        ),
+                      ),
+                      DataColumn(
+                        label: Row(
+                          children: [
+                            Icon(Icons.assessment,
+                                size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            const Text('Result'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    rows: allScans.map((scan) {
+                      final scanType = scan['type'] as String;
+                      final result = scan['result'] as String;
+
+                      return DataRow(
                         cells: [
-                          DataCell(Text(DateFormat('MMM d, y')
-                              .format(scan['timestamp']))),
-                          const DataCell(Text('Gingivitis')),
-                          DataCell(Text(
-                              scan['hasGingivitis'] ? 'Detected' : 'Healthy')),
-                          DataCell(Text(scan['maxSeverity'] != null
-                              ? _getSeverityText(scan['maxSeverity'])
-                              : 'N/A')),
+                          DataCell(
+                            Text(
+                              DateFormat('MMM d, y').format(scan['timestamp']),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getScanTypeColor(scanType),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                scanType,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            scanType == 'Plaque' && scan['hasImage']
+                                ? TextButton.icon(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => Dialog(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              AppBar(
+                                                title:
+                                                    const Text('Scan Result'),
+                                                leading: IconButton(
+                                                  icon: const Icon(Icons.close),
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
+                                                ),
+                                              ),
+                                              Image.network(
+                                                scan['resultImageUrl'],
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.image,
+                                        size: 20, color: Colors.blue),
+                                    label: const Text('View Result',
+                                        style: TextStyle(color: Colors.blue)),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12),
+                                    ),
+                                  )
+                                : Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _getResultColor(result),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(result),
+                                    ],
+                                  ),
+                          ),
                         ],
-                      )),
-                  ...calculusData.map((scan) => DataRow(
-                        cells: [
-                          DataCell(Text(DateFormat('MMM d, y')
-                              .format(scan['timestamp']))),
-                          const DataCell(Text('Calculus')),
-                          DataCell(Text(scan['topPrediction'] ?? 'Unknown')),
-                          DataCell(Text(
-                              '${(scan['confidence'] * 100).toStringAsFixed(1)}%')),
-                        ],
-                      )),
-                ]..sort((a, b) => (b.cells[0].child as Text)
-                    .data!
-                    .compareTo((a.cells[0].child as Text).data!)),
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getScanTypeColor(String type) {
+    switch (type) {
+      case 'Gingivitis':
+        return Colors.purple[400]!;
+      case 'Calculus':
+        return Colors.blue[400]!;
+      case 'Plaque':
+        return Colors.teal[400]!;
+      default:
+        return Colors.grey[400]!;
+    }
+  }
+
+  Color _getResultColor(String result) {
+    switch (result.toLowerCase()) {
+      case 'healthy':
+        return Colors.green;
+      case 'detected':
+      case 'heavy calculus':
+      case 'light calculus':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }

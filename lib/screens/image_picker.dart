@@ -12,7 +12,7 @@ class ImagePickerDemo extends StatefulWidget {
 class _ImagePickerDemoState extends State<ImagePickerDemo> {
   File? _image;
   Map<String, dynamic>? _result;
-  double imageWidth = 1; // Initialize with non-zero values
+  double imageWidth = 1;
   double imageHeight = 1;
   bool isLoading = false;
 
@@ -26,7 +26,6 @@ class _ImagePickerDemoState extends State<ImagePickerDemo> {
         isLoading = true;
       });
 
-      // Get image dimensions first
       final decodedImage = await decodeImageFromList(_image!.readAsBytesSync());
       setState(() {
         imageWidth = decodedImage.width.toDouble();

@@ -111,6 +111,37 @@ class _GingivitisPredictorState extends State<GingivitisPredictor> {
     }
   }
 
+  Widget _buildMedicalDisclaimer() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Medical Disclaimer',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'This app is for informational purposes only and should not be used as a substitute for professional medical advice. Please consult your dentist or healthcare provider before making any medical decisions based on the results from this app.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[800],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _askToSaveResults() {
     ScaffoldMessenger.of(context).clearSnackBars();
     return ScaffoldMessenger.of(context)
@@ -192,7 +223,7 @@ class _GingivitisPredictorState extends State<GingivitisPredictor> {
 
       var response = await http.post(
         Uri.parse(
-            "https://outline.roboflow.com/gingivitis-8izag/1?api_key=qT7vcv1pFkSk3smKEGHS"),
+            "https://outline.roboflow.com/gingivitis2-9vzqb/11?api_key=qT7vcv1pFkSk3smKEGHS"),
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
         body: base64Image,
       );
@@ -232,7 +263,7 @@ class _GingivitisPredictorState extends State<GingivitisPredictor> {
                     if (_image != null)
                       isLoading
                           ? SizedBox(
-                              height: 300, // Match the image container height
+                              height: 300,
                               child: Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -336,6 +367,7 @@ class _GingivitisPredictorState extends State<GingivitisPredictor> {
                                     ],
                                   ),
                                 ),
+                                _buildMedicalDisclaimer(),
                               ],
                             ),
                   ],
@@ -421,22 +453,23 @@ class PolygonPainter extends CustomPainter {
 
   PolygonPainter(this.predictions, this.imageWidth, this.imageHeight);
 
-  Color getClassColor(String classNum) {
+  String getClassNumber(String classString) {
+    return classString.split(' ')[0];
+  }
+
+  Color getClassColor(String classString) {
+    String classNum = getClassNumber(classString);
     switch (classNum) {
-      case "0": // Upper Teeth
-        return Colors.blue.withValues(alpha: 0.3);
-      case "1": // Lower Teeth
-        return Colors.green.withValues(alpha: 0.3);
-      case "2": // None
-        return Colors.yellow.withValues(alpha: 0.3);
-      case "3": // Mild
-        return Colors.orange.withValues(alpha: 0.3);
-      case "4": // Moderate
-        return Colors.deepOrangeAccent.withValues(alpha: 0.3);
-      case "5": // Severe
-        return Colors.red.withValues(alpha: 0.3);
-      case "6": // Very Severe
-        return Colors.purple.withValues(alpha: 0.3);
+      case "0":
+        return const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.3);
+      case "1":
+        return const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.3);
+      case "2":
+        return const Color.fromARGB(255, 98, 255, 59).withValues(alpha: 0.3);
+      case "3":
+        return const Color.fromARGB(255, 251, 255, 0).withValues(alpha: 0.3);
+      case "4":
+        return const Color.fromARGB(255, 255, 0, 0).withValues(alpha: 0.3);
       default:
         return Colors.grey.withValues(alpha: 0.3);
     }
@@ -462,7 +495,6 @@ class PolygonPainter extends CustomPainter {
         path.addPolygon(points.cast<Offset>(), true);
         canvas.drawPath(path, paint);
 
-        // Draw border with more opacity
         paint.style = PaintingStyle.stroke;
         paint.color = getClassColor(prediction['class'].toString())
             .withValues(alpha: 0.8);
@@ -480,22 +512,23 @@ class ResultsLegend extends StatelessWidget {
 
   ResultsLegend({super.key, required this.predictions});
 
-  Color getClassColor(String classNum) {
+  String getClassNumber(String classString) {
+    return classString.split(' ')[0];
+  }
+
+  Color getClassColor(String classString) {
+    String classNum = getClassNumber(classString);
     switch (classNum) {
-      case "0": // Upper Teeth
-        return Colors.blue.withValues(alpha: 0.3);
-      case "1": // Lower Teeth
-        return Colors.green.withValues(alpha: 0.3);
-      case "2": // None
-        return Colors.yellow.withValues(alpha: 0.3);
-      case "3": // Mild
-        return Colors.orange.withValues(alpha: 0.3);
-      case "4": // Moderate
-        return Colors.deepOrangeAccent.withValues(alpha: 0.3);
-      case "5": // Severe
-        return Colors.red.withValues(alpha: 0.3);
-      case "6": // Very Severe
-        return Colors.purple.withValues(alpha: 0.3);
+      case "0":
+        return const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.3);
+      case "1":
+        return const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.3);
+      case "2":
+        return const Color.fromARGB(255, 98, 255, 59).withValues(alpha: 0.3);
+      case "3":
+        return const Color.fromARGB(255, 251, 255, 0).withValues(alpha: 0.3);
+      case "4":
+        return const Color.fromARGB(255, 255, 0, 0).withValues(alpha: 0.3);
       default:
         return Colors.grey.withValues(alpha: 0.3);
     }
@@ -504,17 +537,24 @@ class ResultsLegend extends StatelessWidget {
   Map<String, List<dynamic>> groupPredictions() {
     Map<String, List<dynamic>> groups = {};
     for (var prediction in predictions) {
-      String classNum = prediction['class'].toString();
-      groups.putIfAbsent(classNum, () => []);
-      groups[classNum]!.add(prediction);
+      String classString = prediction['class'].toString();
+      groups.putIfAbsent(classString, () => []);
+      groups[classString]!.add(prediction);
     }
     return groups;
+  }
+
+  bool hasGingivitis(Map<String, List<dynamic>> groups) {
+    return groups.keys.any((k) {
+      String classNum = getClassNumber(k);
+      return int.tryParse(classNum) != null && int.parse(classNum) >= 3;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     Map<String, List<dynamic>> groupedPredictions = groupPredictions();
-    bool hasGingivitis = groupedPredictions.keys.any((k) => int.parse(k) >= 2);
+    bool hasGingivitisCondition = hasGingivitis(groupedPredictions);
 
     return Card(
       margin: EdgeInsets.all(16),
@@ -531,10 +571,11 @@ class ResultsLegend extends StatelessWidget {
               ),
             ),
             SizedBox(height: 8),
-            if (groupedPredictions.containsKey("0"))
-              _buildRegionIndicator("0", "Upper Teeth Region"),
-            if (groupedPredictions.containsKey("1"))
-              _buildRegionIndicator("1", "Lower Teeth Region"),
+            ...groupedPredictions.entries
+                .where((e) =>
+                    getClassNumber(e.key) == "0" ||
+                    getClassNumber(e.key) == "1")
+                .map((entry) => _buildRegionIndicator(entry.key)),
             Divider(height: 24),
             Text(
               'Analysis Results',
@@ -544,20 +585,23 @@ class ResultsLegend extends StatelessWidget {
               ),
             ),
             SizedBox(height: 12),
-            if (!hasGingivitis)
+            if (!hasGingivitisCondition)
               _buildHealthyMessage()
             else
-              ...groupedPredictions.entries
-                  .where((e) => int.parse(e.key) >= 2)
-                  .map((entry) =>
-                      _buildSeverityIndicator(entry.key, entry.value.length)),
+              ...groupedPredictions.entries.where((e) {
+                String classNum = getClassNumber(e.key);
+                return int.tryParse(classNum) != null &&
+                    int.parse(classNum) >= 2;
+              }).map((entry) =>
+                  _buildSeverityIndicator(entry.key, entry.value.length)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRegionIndicator(String classNum, String label) {
+  Widget _buildRegionIndicator(String classString) {
+    String label = classString.split(' ')[1].replaceAll('-', ' ');
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -566,10 +610,13 @@ class ResultsLegend extends StatelessWidget {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: getClassColor(classNum),
+              color: getClassColor(classString),
               border: Border.all(
-                color: getClassColor(classNum).withValues(alpha: 0.8),
+                color: Colors.black,
               ),
+              // border: Border.all(
+              //   color: getClassColor(classString).withValues(alpha: 0.8),
+              // ),
             ),
           ),
           SizedBox(width: 12),
@@ -582,8 +629,8 @@ class ResultsLegend extends StatelessWidget {
     );
   }
 
-  Widget _buildSeverityIndicator(String classNum, int count) {
-    String severityLabel = getSeverityLabel(classNum);
+  Widget _buildSeverityIndicator(String classString, int count) {
+    String label = classString.split(' ')[1].replaceAll('-', ' ');
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -592,16 +639,16 @@ class ResultsLegend extends StatelessWidget {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: getClassColor(classNum),
+              color: getClassColor(classString),
               border: Border.all(
-                color: getClassColor(classNum).withValues(alpha: 0.8),
+                color: getClassColor(classString).withValues(alpha: 0.8),
               ),
             ),
           ),
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              '$severityLabel ($count ${count == 1 ? 'tooth' : 'teeth'})',
+              '$label ($count ${count == 1 ? 'tooth' : 'teeth'})',
               style: TextStyle(fontSize: 16),
             ),
           ),
@@ -633,22 +680,5 @@ class ResultsLegend extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String getSeverityLabel(String classNum) {
-    switch (classNum) {
-      case "2":
-        return "No Gingivitis";
-      case "3":
-        return "Mild Gingivitis";
-      case "4":
-        return "Moderate Gingivitis";
-      case "5":
-        return "Severe Gingivitis";
-      case "6":
-        return "Very Severe Gingivitis";
-      default:
-        return "Unknown";
-    }
   }
 }

@@ -3,7 +3,7 @@ import 'package:oralytics/models/user_model.dart';
 import 'package:oralytics/screens/calculus_predictor.dart';
 import 'package:oralytics/screens/gingivitis_predictor.dart';
 import 'package:oralytics/services/auth_service.dart';
-import 'package:oralytics/screens/image_picker.dart';
+import 'package:oralytics/screens/plaque_predictor.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({Key? key}) : super(key: key);
@@ -13,7 +13,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -85,7 +85,6 @@ class HomePage extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 40),
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 1,
@@ -100,14 +99,14 @@ class HomePage extends StatelessWidget {
                           context,
                         ),
                         _buildModuleCard(
-                          'Gingivitis',
+                          'Gingivitis Prediction',
                           'assets/gingivitis.tiff',
                           const Color(0xFF2ECC71),
                           context,
                         ),
                         _buildModuleCard(
-                          'Plaque',
-                          'assets/plaque.jpeg',
+                          'Plaque Prediction',
+                          'assets/other.jpg',
                           const Color(0xFF9B59B6),
                           context,
                         ),
@@ -140,18 +139,18 @@ class HomePage extends StatelessWidget {
                 builder: (context) => CalculusPredictor(),
               ),
             );
-          } else if (title == 'Gingivitis') {
+          } else if (title == 'Gingivitis Prediction') {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => GingivitisPredictor(),
               ),
             );
-          } else if (title == 'Plaque') {
+          } else if (title == 'Plaque Prediction') {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ImagePickerDemo(),
+                builder: (context) => PlaquePredictor(),
               ),
             );
           }

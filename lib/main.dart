@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
     final primaryColor = Color.fromARGB(255, 44, 111, 178);
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Oralytics',
       theme: ThemeData(
         primaryColor: primaryColor,
@@ -99,6 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
