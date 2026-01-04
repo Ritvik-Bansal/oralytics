@@ -4,7 +4,7 @@ Oralytics is a low cost oral health scanner that uses 405 nm near-UV light to ma
 
 This repository contains the mobile app (Flutter). The app connects to inference services or local model runners depending on your setup.
 
-Feel free to visit out website: https://oralytix.info/
+Learn more: **[Website](https://oralytix.info)** | **[Research paper (PDF)](https://drive.google.com/file/d/171i-Bo5Q4HoilzEfdt1qfqkkCdVthTMJ/view?usp=sharing)**
 
 ## What it does
 
